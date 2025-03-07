@@ -1,6 +1,10 @@
-helium==3.0.9
-selenium==3.141.0
-openai==1.12.0
+
+litellm>=0.1.0
 python-dotenv==1.0.0
 pillow==11.0.0
 smolagents==1.10.0  
+
+
+selenium==4.19.0
+webdriver-manager==4.0.1
+helium==5.1.1

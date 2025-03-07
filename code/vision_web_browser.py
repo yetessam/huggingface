@@ -2,17 +2,49 @@ import argparse
 from io import BytesIO
 from time import sleep
 
+import litellm
+import os
 
-import helium
 from dotenv import load_dotenv
 from PIL import Image
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+
 
 from smolagents import CodeAgent, DuckDuckGoSearchTool, tool
 from smolagents.agents import ActionStep
 from smolagents.cli import load_model
+
+import litellm
+import os
+
+import helium
+from helium import set_driver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.common.exceptions import WebDriverException
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+
+from helium import start_chrome, kill_browser
+
+
+def test_gpt4_connection():
+    """Tests connection to GPT-4 Turbo using LiteLLM"""
+    api_key = os.getenv("OPENAI_API_KEY")  # Ensure your key is loaded
+    if not api_key:
+        print("❌ OPENAI_API_KEY is missing! Check your .env file.")
+        return
+
+    try:
+        print("🔄 Testing connection to GPT-4 Turbo...")
+        response = litellm.completion(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": "Hello, GPT-4 Turbo! Are you there?"}],
+            api_key=api_key  # Use the API key
+        )
+        print("✅ GPT-4 Turbo Response:", response["choices"][0]["message"]["content"])
+    except Exception as e:
+        print("❌ Failed to connect to GPT-4 Turbo:", str(e))
 
 
 alfred_guest_list_request = """
@@ -40,7 +72,7 @@ def parse_arguments():
     parser.add_argument(
         "--model-id",
         type=str,
-        default="gpt-4o",
+        default="gpt-4-turbo",
         help="The model ID to use for the specified model type",
     )
     return parser.parse_args()
@@ -106,6 +138,14 @@ def initialize_driver():
     chrome_options.add_argument("--window-size=1000,1350")
     chrome_options.add_argument("--disable-pdf-viewer")
     chrome_options.add_argument("--window-position=0,0")
+    
+      # Manually start the Selenium WebDriver
+    #driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+
+    # Set the driver for Helium
+    #set_driver(driver)
+
+    #return driver
     return helium.start_chrome(headless=False, options=chrome_options)
 
 
@@ -189,6 +229,9 @@ def main():
     # Load environment variables
     load_dotenv()
 
+    # Test GPT-4 Turbo connection
+    #test_gpt4_connection()
+    
     # Parse command line arguments
     args = parse_arguments()
 
@@ -199,10 +242,16 @@ def main():
     driver = initialize_driver()
     agent = initialize_agent(model)
 
-    # Run the agent with the provided prompt
-    agent.python_executor("from helium import *", agent.state)
+    # Check the agent's state
+    print("Start Agent State:", agent.state)
+        
+    #agent.python_executor("from helium import *", agent.state)
+    agent.python_executor("from helium import *")
+     
     agent.run(args.prompt + helium_instructions)
-
+    # Check the agent's state
+    print("Final Agent State:", agent.state)
 
 if __name__ == "__main__":
     main()
+    
